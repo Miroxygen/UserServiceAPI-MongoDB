@@ -4,7 +4,7 @@ metadata:
   name: user-service
 build:
   artifacts:
-    - image: gitlab.lnu.se:5050/2dv013/student/team-2023-03-bengal/user-service/user-service
+    - image: github.com/name-of-repo
       docker:
         dockerfile: Dockerfile
 manifests:
