@@ -1,0 +1,51 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: user-service
+build:
+  artifacts:
+    - image: gitlab.lnu.se:5050/2dv013/student/team-2023-03-bengal/user-service/user-service
+      docker:
+        dockerfile: Dockerfile
+manifests:
+  rawYaml:
+    - k8s/volumes-staging.yaml
+    - k8s/service.yaml
+  helm:
+    releases:
+      - name: mongodb-user-service
+        remoteChart: oci://registry-1.docker.io/bitnamicharts/mongodb
+        version: 14.4.2
+        setValues:
+          global:
+            namespaceOverride: staging
+          persistence.enabled: true
+          persistence.volumeClaimTemplates.selector:
+            matchLabels:
+              environment: staging
+            matchExpressions:
+              - {key: "app.kubernetes.io/instance",
+                 operator: In,
+                 values: [mongodb-user-service]}
+          auth.existingSecret: mongodb-ich-bin-ein-geheimnis
+          volumePermissions.enabled: true
+deploy:
+  kubectl:
+    defaultNamespace: staging
+
+profiles:
+- name: staging
+- name: production
+  patches:
+  - op: replace
+    path: /deploy/kubectl/defaultNamespace
+    value: production
+  - op: replace
+    path: /manifests/helm/releases/0/setValues/global.namespaceOverride
+    value: production
+  - op: replace
+    path: /manifests/rawYaml/0
+    value: k8s/volumes-production.yaml
+  - op: replace
+    path: /manifests/helm/releases/0/setValues/persistence.volumeClaimTemplates.selector.matchLabels.environment
+    value: production

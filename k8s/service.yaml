@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service.name: user-service
+  name: user-service
+spec:
+  ports:
+    - name: "user-service-port"
+      port: 80
+      targetPort: http
+  selector:
+    deployment.name: user-service
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment.name: user-service
+  template:
+    metadata:
+      labels:
+        deployment.name: user-service
+    spec:
+      containers:
+      - name: user-service
+        image: gitlab.lnu.se:5050/2dv013/student/team-2023-03-bengal/user-service/user-service
+        ports:
+          - containerPort: 5035
+            name: http
+        env:
+          - name: MONGODB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-ich-bin-ein-geheimnis
+                key: mongodb-root-password
+                optional: true
+      imagePullSecrets:
+      - name: user-service-regcred

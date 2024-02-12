@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ensimmaeinen-mongodb-volume-staging
+  labels:
+    type: local
+    app.kubernetes.io/instance: mongodb-user-service
+    environment: staging
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 8Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/production/mongodb/yksi"

@@ -1,0 +1,79 @@
+stages:
+  - test
+  - build
+  - deploy-staging
+  - deploy-production
+
+.deploy:
+  image:
+    name: gcr.io/k8s-skaffold/skaffold:v2.8.0
+    entrypoint: ['']
+  resource_group: "${CI_ENVIRONMENT_NAME}"
+  script:
+    - echo "Commit SHA:" "${CI_COMMIT_SHA}"
+    - echo "Target environment:" "${CI_ENVIRONMENT_NAME}"
+    - kubectl config get-contexts
+    - kubectl config use-context $K8S_CONTEXT
+    - kubectl -n "${CI_ENVIRONMENT_NAME}"
+      delete secret user-service-regcred || true
+    - kubectl -n "${CI_ENVIRONMENT_NAME}"
+      create secret docker-registry user-service-regcred
+      --docker-server=$CI_REGISTRY
+      --docker-username=$CI_DEPLOY_USER
+      --docker-password=$CI_DEPLOY_PASSWORD
+    - skaffold deploy
+      -p "${CI_ENVIRONMENT_NAME}"
+      -i "${CI_REGISTRY_IMAGE}/user-service:${CI_COMMIT_SHA}"
+      --namespace="${CI_ENVIRONMENT_NAME}"
+    - kubectl get -n "${CI_ENVIRONMENT_NAME}" deployments
+    - kubectl get -n "${CI_ENVIRONMENT_NAME}" pods
+    - kubectl get -n "${CI_ENVIRONMENT_NAME}" services
+
+test-dotnet:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - dotnet restore
+    - dotnet test
+
+build-image:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.18.0-debug
+    entrypoint: [""]
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}/user-service:${CI_COMMIT_SHA}"
+      --skip-unused-stages
+      --cache=true
+
+deploy-staging:
+  extends: .deploy
+  stage: deploy-staging
+  environment:
+    name: staging
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" &&
+          $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: on_success
+      allow_failure: false
+    - if: $CI_PIPELINE_SOURCE == "push"
+      when: manual
+      allow_failure: true
+
+deploy-production:
+  extends: .deploy
+  stage: deploy-production
+  environment:
+    name: production
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" &&
+          $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+    - when: never
+
+
+
