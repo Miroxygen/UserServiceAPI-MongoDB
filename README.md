@@ -1,16 +1,20 @@
 ### User service
 
-Responsible for handling the "Pedigree chart" of Litter. This is the users own page where it is possible to find the lits a user has created, and the functions "leash/unleash" is also possible here for authenticated users. The Pedigree chart itself is reachable for unauthenticated users. The purpose of user-service is to hold a place for the user page, it's collected lits and a follow/un-follow function. The user service itself will not hold the lits, as that its the responsibility of the lit-service. Instead user-service will 
-keep information about the users name, id, email, leashes and leashings. This is because the database requirements for the lits are heavier than for the users own information, and so seperating them is necessary to create a better overview and for the users information to be kept in a slimmer database.
+The User Service API manages user data operations such as creating, retrieving, updating, and deleting users. It includes features for searching users by name and managing follower relationships. Built with ASP.NET Core and MongoDB, the service ensures data integrity and detailed logging of user actions, using HTTP and REST protocols for communication.
+
+###### User model
+
+The User class models user data for the User Service API, designed to work with MongoDB using BSON format. It includes properties for Id (unique MongoDB ObjectId), UserId (unique integer), Name, Username, Followers (count), and Following (list of UserIds). The constructor initializes the Following list to ensure it's ready for use. This setup makes it efficient to store and manage data.
+
+###### Services Overview
+
+The UserService class handles interactions with the MongoDB database for user data. It establishes a secure connection using credentials and provides methods for creating, retrieving, updating, and deleting user records. It also includes methods to get all users and remove all users from the database.
+
+The DatabaseInitializationService class checks the connection to the database. It uses UserService to try fetching user data and logs any connection errors. This helps to check if database is reachable and ready for operations. Both services are necessary for maintaining and verifying the integrity and availability of user data in the application.
 
 ###### Flow
-
-- User leashes or unleashes another user on their page.
-- Correct leash status is set in database.
-
-and
-
-- Present correct data about users leashes and leashings.
+- Get correct data about users leashes and leashings (followers).
+- Fetch name on search.
 
 ###### Protocols
 
